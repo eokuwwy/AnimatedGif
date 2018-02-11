@@ -136,7 +136,7 @@
     backgrRed = [defaults floatForKey:@"BackgrRed"];
     backgrGreen = [defaults floatForKey:@"BackgrGreen"];
     backgrBlue = [defaults floatForKey:@"BackgrBlue"];
-    NSInteger changeIntervalInSec = [defaults integerForKey:@"ChangeInterval"] * 60;
+    NSInteger changeIntervalInSec = [defaults integerForKey:@"ChangeInterval"] * 15;
     
     // select a random file from directory or keep the file if it was already a file
     NSString *newGifFileName = [self getRandomGifFile:gifFileName];
