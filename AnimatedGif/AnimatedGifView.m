@@ -174,7 +174,7 @@
     backgrRed = [defaults floatForKey:@"BackgrRed"];
     backgrGreen = [defaults floatForKey:@"BackgrGreen"];
     backgrBlue = [defaults floatForKey:@"BackgrBlue"];
-    NSInteger changeIntervalInMin = [defaults integerForKey:@"ChangeInterval"];
+    NSInteger changeIntervalInSec = [defaults integerForKey:@"ChangeInterval"] * 15;
     
     // select a random file from directory or keep the file if it was already a file
     NSString *newGifFileName = [self getRandomGifFile:gifFileName];
@@ -196,11 +196,11 @@
     filter = filterOption;
     
     // check if it is a file or a directory
-    if ([self isDir:gifFileName] && ((changeIntervalInMin) != NEVER_CHANGE_GIF))
+    if ([self isDir:gifFileName] && ((changeIntervalInSec) != NEVER_CHANGE_GIF))
     {
 
         // start a one-time timer at end of startAnimation otherwise the time for loading the GIF is part of the timer
-        [NSTimer scheduledTimerWithTimeInterval:(changeIntervalInMin * 60)
+        [NSTimer scheduledTimerWithTimeInterval:(changeIntervalInSec)
                                          target:self
                                        selector:@selector(timerMethod)
                                        userInfo:nil
