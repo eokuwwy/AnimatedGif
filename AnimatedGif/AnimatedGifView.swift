@@ -112,17 +112,17 @@ class AnimatedGifView : ScreenSaverView {
     }
 
     func createGLView() -> NSOpenGLView {
-        let attribs:UnsafePointer<NSOpenGLPixelFormatAttribute> = [UInt32(NSOpenGLPFADoubleBuffer), UInt32(NSOpenGLPFAAccelerated), UInt32(0)]
+        let attribs:[NSOpenGLPixelFormatAttribute] = [NSOpenGLPixelFormatAttribute(NSOpenGLPFADoubleBuffer), NSOpenGLPixelFormatAttribute(NSOpenGLPFAAccelerated), NSOpenGLPixelFormatAttribute(0)]
         let format = NSOpenGLPixelFormat(attributes: attribs)
         let glview = NSOpenGLView(frame: NSZeroRect, pixelFormat: format)
-        var swapInterval: GLint = SYNC_TO_VERTICAL
-        glview?.openGLContext?.setValues(swapInterval, for: NSOpenGLCPSwapInterval)
+        var swapInterval: GLint = GLint(SYNC_TO_VERTICAL)
+        glview?.openGLContext?.setValues(&swapInterval, for: .swapInterval)
         return glview ?? NSOpenGLView()
     }
 
-    func setFrameSize(_ newSize: NSSize) {
+    override func setFrameSize(_ newSize: NSSize) {
         super.setFrameSize(newSize)
-        glView.setFrameSize(newSize)
+        glView?.setFrameSize(newSize)
     }
 
     func isOpaque() -> Bool {
@@ -131,7 +131,7 @@ class AnimatedGifView : ScreenSaverView {
     }
 
     deinit {
-        glView.removeFromSuperview()
+        glView?.removeFromSuperview()
         glView = nil
     }
 
@@ -145,51 +145,51 @@ class AnimatedGifView : ScreenSaverView {
         trigByTimer = false
     }
 
-    func startAnimation() {
+    override func startAnimation() {
         if trigByTimer == false {
             // only call super method in case startAnimation is not called by timerMethod
             super.startAnimation()
             // add glview to screensaver view in case of not in preview mode
-            if isPreview() == false {
-                addSubview(glView)
+            if isPreview == false {
+                addSubview(glView!)
             }
             // bug of OSX: since 10.13 the background mode of screensaver is brocken (the ScreenSaverEngine uses for background-mode its own space that is in foreground and this space can't be accessed from the ScreenSaverView)
             // workaround: AnimatedGif use the window-mode of the ScreenSaverEngine and change the behavior of that window to an background window
-            if isPreview() == false {
+            if isPreview == false {
                     // get the program arguments of the process
                 let args = ProcessInfo.processInfo.arguments
                 // check if process was startet with argument -window for window mode of screensaver
                 if (args.count == 2) && (args[1] == "-window") {
                     // now we move the window to background level and maximize it as we need it
                     if let aFrame = NSScreen.main?.frame {
-                        window.setFrame(aFrame, display: true)
+                        window?.setFrame(aFrame, display: true)
                     }
-                    super.frame = NSScreen.main?.frame
-                    window.styleMask = NSFullSizeContentViewWindowMask
-                    window.collectionBehavior = [.stationary, .canJoinAllSpaces]
+                    super.frame = (NSScreen.main?.frame)!
+                    window?.styleMask.insert(.fullSizeContentView)
+                    window?.collectionBehavior = [.stationary, .canJoinAllSpaces]
                     window.level = kCGDesktopWindowLevel
                 }
             }
-            if isPreview() == false {
+            if isPreview == false {
                 // hide window since next steps need some time an look ugly
-                window.orderOut(self)
+                window?.orderOut(self)
             }
         }
             // get filename from screensaver defaults
-        let defaults = ScreenSaverDefaults(forModuleWithName: (Bundle(for: AnimatedGifView).bundleIdentifier) ?? "")
-        let gifFileName = defaults?["GifFileName"] as? String
+        let defaults = ScreenSaverDefaults(forModuleWithName: (Bundle(for: AnimatedGifView.self).bundleIdentifier) ?? "")
+        let gifFileName = defaults?.string(forKey: "GifFileName")
         let frameRate: Float? = defaults?.float(forKey: "GifFrameRate")
         let frameRateManual: Bool? = defaults?.bool(forKey: "GifFrameRateManual")
-        loadAnimationToMem = defaults?.bool(forKey: "LoadAniToMem")
+        loadAnimationToMem = (defaults?.bool(forKey: "LoadAniToMem"))!
         let viewOption: Int? = defaults?.integer(forKey: "ViewOpt")
-        backgrRed = defaults?.float(forKey: "BackgrRed")
-        backgrGreen = defaults?.float(forKey: "BackgrGreen")
-        backgrBlue = defaults?.float(forKey: "BackgrBlue")
-        let changeIntervalInSec: Int = defaults?.integer(forKey: "ChangeInterval") * 15
+        backgrRed = (defaults?.float(forKey: "BackgrRed"))!
+        backgrGreen = (defaults?.float(forKey: "BackgrGreen"))!
+        backgrBlue = (defaults?.float(forKey: "BackgrBlue"))!
+        let changeIntervalInSec: Int = (defaults?.integer(forKey: "ChangeInterval"))! * 15
             // select a random file from directory or keep the file if it was already a file
-        let newGifFileName: String = getRandomGifFile(gifFileName)
+        let newGifFileName: String = getRandomGifFile(gifFileName!)
             // load GIF image
-        let isFileLoaded: Bool = loadGif(fromFile: newGifFileName, andUseManualFps: frameRateManual, withFps: frameRate)
+        let isFileLoaded: Bool = loadGif(fromFile: newGifFileName, andUseManualFps: frameRateManual!, withFps: frameRate!)
         if isFileLoaded {
             currFrameCount = FIRST_FRAME
         }
@@ -197,99 +197,98 @@ class AnimatedGifView : ScreenSaverView {
             currFrameCount = FRAME_COUNT_NOT_USED
         }
         // calculate target and screen rectangle size
-        screenRect = bounds()
-        targetRect = calcTargetRect(fromOption: viewOption)
+        screenRect = bounds
+        targetRect = calcTargetRect(fromOption: viewOption!)
         // check if it is a file or a directory
-        if isDir(gifFileName) {
+        if isDir(gifFileName!) {
             // start a one-time timer at end of startAnimation otherwise the time for loading the GIF is part of the timer
             Timer.scheduledTimer(timeInterval: TimeInterval(changeIntervalInSec), target: self, selector: #selector(self.timerMethod), userInfo: nil, repeats: false)
         }
         if trigByTimer == false {
-            if isPreview() == false {
+            if isPreview == false {
                 // unhide window
-                window.orderBack(self)
+                window!.orderBack(self)
             }
         }
     }
 
-    func stopAnimation() {
+    override func stopAnimation() {
         if trigByTimer == false {
             // only call super method in case stopAnimation is not called by timerMethod
-            super.stop()
+            super.stopAnimation()
             // only remove GL view in case stopAnimation is not called by timerMethod
-            if isPreview() == false {
+            if isPreview == false {
                 // remove glview from screensaver view
                 removeFromSuperview()
             }
         }
-        if (isPreview() == false) && (loadAnimationToMem == true) {
+        if (isPreview == false) && (loadAnimationToMem == true) {
             /*clean all pre-calculated bitmap images*/
             animationImages.removeAll()
-            animationImages = nil
         }
         img = nil
         currFrameCount = FRAME_COUNT_NOT_USED
     }
 
-    func animateOneFrame() {
+    override func animateOneFrame() {
         if currFrameCount == FRAME_COUNT_NOT_USED {
             // FRAME_COUNT_NOT_USED means no image is loaded and so we clear the screen with the set background color
-            if isPreview() == true {
+            if isPreview == true {
                 // only clear screen with background color (not OpenGL)
-                NSColor(deviceRed: backgrRed, green: backgrGreen, blue: backgrBlue, alpha: NS_ALPHA_OPAQUE).set()
+                NSColor(deviceRed: CGFloat(backgrRed), green: CGFloat(backgrGreen), blue: CGFloat(backgrBlue), alpha: CGFloat(NS_ALPHA_OPAQUE)).set()
                 NSBezierPath.fill(screenRect)
             }
             else {
                 // only clear screen with background color (OpenGL)
-                glView.openGLContext?.makeCurrentContext()
-                glClearColor(backgrRed, backgrGreen, backgrBlue, GL_ALPHA_OPAQUE)
-                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)
+                glView?.openGLContext?.makeCurrentContext()
+                glClearColor(backgrRed, backgrGreen, backgrBlue, GLclampf(GL_ALPHA_OPAQUE))
+                glClear(GLbitfield(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT))
                 glFlush()
                 needsDisplay = true
             }
         }
         else {
             // draw the selected frame
-            if isPreview() == true {
+            if isPreview == true {
                 // In Preview Mode OpenGL leads to crashes (?) so we make a classical image draw
                 //select current frame from GIF (Hint: gifRep is a sub-object from img)
-                gifRep.setProperty(.currentFrame, withValue: currFrameCount)
+                gifRep?.setProperty(.currentFrame, withValue: currFrameCount)
                 // than clear screen with background color
-                NSColor(deviceRed: backgrRed, green: backgrGreen, blue: backgrBlue, alpha: NS_ALPHA_OPAQUE).set()
+                NSColor(deviceRed: CGFloat(backgrRed), green: CGFloat(backgrGreen), blue: CGFloat(backgrBlue), alpha: CGFloat(NS_ALPHA_OPAQUE)).set()
                 NSBezierPath.fill(screenRect)
                 // now draw frame
-                img.draw(in: targetRect)
+                img?.draw(in: targetRect)
             }
             else {
                 // if we have no Preview Mode we use OpenGL to draw
                 // change context to glview
-                glView.openGLContext?.makeCurrentContext()
+                glView?.openGLContext?.makeCurrentContext()
                 // first clear screen with background color
-                glClearColor(backgrRed, backgrGreen, backgrBlue, GL_ALPHA_OPAQUE)
-                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)
+                glClearColor(backgrRed, backgrGreen, backgrBlue, GLclampf(GL_ALPHA_OPAQUE))
+                glClear(GLbitfield(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT))
                 // Start phase
                 glPushMatrix()
                 // defines the pixel resolution of the screen (can be smaller than real screen, but than you will see pixels)
-                glOrtho(0, screenRect.size.width, screenRect.size.height, 0, -1, 1)
-                glEnable(GL_TEXTURE_2D)
-                if gifRep.hasAlpha() == true {
-                    glEnable(GL_BLEND)
-                    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
+                glOrtho(0, GLdouble(screenRect.size.width), GLdouble(screenRect.size.height), 0, -1, 1)
+                glEnable(GLenum(GL_TEXTURE_2D))
+                if gifRep?.hasAlpha == true {
+                    glEnable(GLenum(GL_BLEND))
+                    glBlendFunc(GLenum(GL_ONE), GLenum(GL_ONE_MINUS_SRC_ALPHA))
                 }
                     //get one free texture name
                 var frameTextureName: GLuint
-                glGenTextures(1, frameTextureName)
+                glGenTextures(1, &frameTextureName)
                 //bind a Texture object to the name
-                glBindTexture(GL_TEXTURE_2D, frameTextureName)
+                glBindTexture(GLenum(GL_TEXTURE_2D), frameTextureName)
                 // load current bitmap as texture into the GPU
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+                glTexParameterf(GLenum(GL_TEXTURE_2D), GLenum(GL_TEXTURE_MIN_FILTER), GLfloat(GLenum(GL_LINEAR_MIPMAP_LINEAR)))
+                glTexParameterf(GLenum(GL_TEXTURE_2D), GLenum(GL_TEXTURE_MAG_FILTER), GLfloat(GLenum(GL_LINEAR)))
+                glTexParameterf(GLenum(GL_TEXTURE_2D), GLenum(GL_TEXTURE_WRAP_S), GLfloat(GLenum(GL_CLAMP_TO_EDGE)))
+                glTexParameterf(GLenum(GL_TEXTURE_2D), GLenum(GL_TEXTURE_WRAP_T), GLfloat(GLenum(GL_CLAMP_TO_EDGE)))
                 if loadAnimationToMem == true {
                         // we load bitmap data from memory and save CPU time (created during startAnimation)
-                    let pixels: Data? = animationImages[currFrameCount]
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (gifRep.pixelsWide as? GLint), (gifRep.pixelsHigh as? GLint), 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels?.bytes)
+                    let pixels: Data? = animationImages[currFrameCount] as? Data
+                    glTexImage2D(GLenum(GL_TEXTURE_2D), 0, GL_RGBA, (Int32(gifRep!.pixelsWide)), (Int32(gifRep!.pixelsHigh)), 0, GLenum(GL_RGBA), GLenum(GL_UNSIGNED_BYTE), pixels)
                 }
                 else {
                     // bitmapData needs more CPU time to create bitmap data
@@ -502,7 +501,7 @@ class AnimatedGifView : ScreenSaverView {
 
     @IBAction func pressCheckboxSetFpsManual(_ sender: Any) {
             // enable or disable slider depending on checkbox
-        let frameRateManual: Bool = checkButtonSetFpsManual.state
+        let frameRateManual: Bool = checkButtonSetFpsManual.state == .on
         if frameRateManual {
             enableSliderFpsManual(true)
         }
@@ -513,12 +512,12 @@ class AnimatedGifView : ScreenSaverView {
 
     @IBAction func selectSliderFpsManual(_ sender: Any) {
         // update label with actual selected value of slider
-        labelFpsManual = Int("\(sliderFpsManual)") ?? 0
+        labelFpsManual.stringValue = "\(Int("\(sliderFpsManual)") ?? 0)"
     }
 
     @IBAction func selectSliderChangeInterval(_ sender: Any) {
         // update label with actual selected value of slider
-        labelChangeInterval = Int("\(sliderChangeInterval)") ?? 0
+        labelChangeInterval.stringValue = "\(Int("\(sliderChangeInterval)") ?? 0)"
     }
 
     func enableSliderChangeInterval(_ enable: Bool) {
@@ -593,32 +592,32 @@ class AnimatedGifView : ScreenSaverView {
         }
         else {
             // in case of an file remove two level of path before open it
-            openDlg.directoryURL = URL(string: "\(textFieldFileUrl)")?.deletingLastPathComponent?.deletingLastPathComponent
+            openDlg.directoryURL = URL(string: "\(textFieldFileUrl)")?.deletingLastPathComponent().deletingLastPathComponent
         }
         // try to 'focus' only on GIF files (Yes, I know all image types are working with NSImage)
         openDlg.allowedFileTypes = ["gif", "GIF"]
         // Display the dialog.  If the OK button was pressed,
         // process the files.
-        if openDlg.runModal() == NSOKButton {
+        if openDlg.runModal().rawValue == NSOKButton {
                 // Get an array containing the full filenames of all
                 // files and directories selected.
             let files = openDlg.urls
             let newSelectedFileOrDir: URL? = files[0]
             // set GUI element with selected URL
             textFieldFileUrl = Int(newSelectedFileOrDir?.absoluteString) ?? 0
-            if isDir(newSelectedFileOrDir?.absoluteString) {
+            if isDir((newSelectedFileOrDir?.absoluteString)!) {
                 // if we have an directory an fps value for a file makes not much sense
                 // we could calculate it for an randomly selected file but this would make thinks to complex
-                labelFpsGif = Int("(dir)") ?? 0
+                labelFpsGif.stringValue = "\(Int("(dir)") ?? 0)"
                 hideFps(fromFile: true)
                 // enable time interval slider only in case that an directory is selected
                 enableSliderChangeInterval(true)
             }
             else {
                     // update file fps in GUI
-                let duration: TimeInterval = getDurationFromGifFile(URL(string: newSelectedFileOrDir?.absoluteString ?? "")?.absoluteString)
+                let duration: TimeInterval = getDurationFromGifFile((URL(string: newSelectedFileOrDir?.absoluteString ?? "")?.absoluteString)!)
                 let fps = Float((1 / duration))
-                labelFpsGif = Int(String(format: "%2.1f", fps)) ?? 0
+                labelFpsGif.stringValue = "\(Int(String(format: "%2.1f", fps)) ?? 0)"
                 hideFps(fromFile: false)
                 // disable time interval slider only in case that an file is selected
                 enableSliderChangeInterval(false)
@@ -637,12 +636,12 @@ class AnimatedGifView : ScreenSaverView {
             try? FileManager.default.createDirectory(atPath: userLaunchAgentsDir, withIntermediateDirectories: true, attributes: nil)
         }
         var pathToScreenSaverEngine = "/System/Library/Frameworks/ScreenSaver.framework/Resources/ScreenSaverEngine.app/Contents/MacOS/ScreenSaverEngine"
-        let osVer = ProcessInfo.processInfo.operatingSystemVersion as? NSOperatingSystemVersion
-        if osVer.majorVersion > 10 || osVer.minorVersion > 12 {
+        let osVer = ProcessInfo.processInfo.operatingSystemVersion as? OperatingSystemVersion
+        if osVer!.majorVersion > 10 || osVer!.minorVersion > 12 {
             pathToScreenSaverEngine = "/System/Library/CoreServices/ScreenSaverEngine.app/Contents/MacOS/ScreenSaverEngine"
         }
             // set values here...
-        let cfg = ["Label": "com.waitsnake.animatedgif", "ProgramArguments": [pathToScreenSaverEngine, "-window"], "KeepAlive": ["OtherJobEnabled": ["com.apple.SystemUIServer.agent": true, "com.apple.Finder": true, "com.apple.Dock.agent": true]], "ThrottleInterval": 0]
+        let cfg = ["Label": "com.waitsnake.animatedgif", "ProgramArguments": [pathToScreenSaverEngine, "-window"], "KeepAlive": ["OtherJobEnabled": ["com.apple.SystemUIServer.agent": true, "com.apple.Finder": true, "com.apple.Dock.agent": true]], "ThrottleInterval": 0] as [String : Any]
         for (k, v) in cfg { plist.updateValue(v, forKey: k) }
             // saves the agent plist file
         let userLaunchAgentsPath = "\("/Users/")\(NSUserName())\("/Library/LaunchAgents/com.waitsnake.animatedgif.plist")"
@@ -650,17 +649,17 @@ class AnimatedGifView : ScreenSaverView {
         plist.removeAll()
             // Workaround: disable clock before start, since this leads to a crash with option "-window" of ScreenSaverEngine
         let cmdstr2 = "\("defaults -currentHost write com.apple.screensaver showClock -bool NO")"
-        system(cmdstr2.cString(using: .utf8))
+        self.system(cmdstr2)
             // start the launch agent
         let cmdstr = "launchctl load \(userLaunchAgentsPath) &"
-        system(cmdstr.cString(using: .utf8))
+        self.system(cmdstr)
     }
 
     func unloadAgent() {
             // stop the launch agent
         let userLaunchAgentsPath = "\("/Users/")\(NSUserName())\("/Library/LaunchAgents/com.waitsnake.animatedgif.plist")"
         let cmdstr = "\("launchctl unload ")\(userLaunchAgentsPath)"
-        system(cmdstr.cString(using: .utf8))
+        self.system(cmdstr)
         // remove the plist agent file
         try? FileManager.default.removeItem(atPath: userLaunchAgentsPath)
     }
@@ -679,18 +678,18 @@ class AnimatedGifView : ScreenSaverView {
 
     func isDir(_ fileOrDir: String) -> Bool {
         var pathExist = false
-        var isDir = false
+        var isDir:ObjCBool = false
             // create an NSURL object from the NSString containing an URL
         let fileOrDirUrl = URL(string: fileOrDir)
             // fileExistsAtPath:isDirectory only works with classical Path
         let fileOrDirPath: String? = fileOrDirUrl?.path
         // check if user selected an directory or path
         if let aPath = fileOrDirPath {
-            pathExist = FileManager.default.fileExists(atPath: aPath, isDirectory: isDir)
+            pathExist = FileManager.default.fileExists(atPath: aPath, isDirectory: &isDir)
         }
         if pathExist == true {
             // path was found
-            if isDir == true {
+            if isDir.boolValue {
                 return true
             }
             else {
@@ -718,7 +717,7 @@ class AnimatedGifView : ScreenSaverView {
                     // how many GIF files we have found
                 let numberOfFiles: Int? = filesFilter?.count
                     // generate an random number with upper boundary of the number of found GIF files
-                let randFile = Int(arc4random_uniform((numberOfFiles as? u_int32_t)))
+                let randFile = Int(arc4random_uniform((numberOfFiles as? UInt32)!))
                 // return a NSString of with an URL of the randomly selected GIF in the list
                 return (filesFilter?[randFile ?? 0]?.absoluteString) ?? ""
             }
@@ -738,22 +737,22 @@ class AnimatedGifView : ScreenSaverView {
     func calcTargetRect(fromOption option: Int) -> NSRect {
             // set some values screensaver and GIF image size
         let mainScreenRect: NSRect? = NSScreen.main?.frame
-        let screenRe: NSRect = bounds()
+        let screenRe: NSRect = bounds
         var targetRe: NSRect = screenRe
-        let screenRatio: Float = pictureRatio(fromWidth: screenRe.size.width, andHeight: screenRe.size.height)
-        let imgRatio: Float = pictureRatio(fromWidth: img.size.width, andHeight: img.size.height)
+        let screenRatio: Float = pictureRatio(fromWidth: Float(screenRe.size.width), andHeight: Float(screenRe.size.height))
+        let imgRatio: Float = pictureRatio(fromWidth: Float(img!.size.width), andHeight: Float(img!.size.height))
         var scaledHeight: CGFloat
         var scaledWidth: CGFloat
         if option == VIEW_OPT_STRETCH_OPTIMAL {
             // fit image optimal to screen
             if imgRatio >= screenRatio {
-                targetRe.size.height = calcHeight(fromRatio: imgRatio, andWidth: screenRe.size.width)
+                targetRe.size.height = CGFloat(calcHeight(fromRatio: imgRatio, andWidth: Float(screenRe.size.width)))
                 targetRe.origin.y = (screenRe.size.height - targetRe.size.height) / 2
                 targetRe.size.width = screenRe.size.width
                 targetRe.origin.x = screenRe.origin.x
             }
             else {
-                targetRe.size.width = calcWidth(fromRatio: imgRatio, andHeight: screenRe.size.height)
+                targetRe.size.width = CGFloat(calcWidth(fromRatio: imgRatio, andHeight: Float(screenRe.size.height)))
                 targetRe.origin.x = (screenRe.size.width - targetRe.size.width) / 2
                 targetRe.size.height = screenRe.size.height
                 targetRe.origin.y = screenRe.origin.y
@@ -764,17 +763,17 @@ class AnimatedGifView : ScreenSaverView {
             targetRe = screenRe
         }
         else if option == VIEW_OPT_KEEP_ORIG_SIZE {
-            if isPreview() == false {
+            if isPreview == false {
                 // in case of NO preview mode: simply keep original size of image
-                targetRe.size.height = img.size.height
-                targetRe.size.width = img.size.width
-                targetRe.origin.y = (screenRe.size.height - img.size.height) / 2
-                targetRe.origin.x = (screenRe.size.width - img.size.width) / 2
+                targetRe.size.height = (img?.size.height)!
+                targetRe.size.width = (img?.size.width)!
+                targetRe.origin.y = (screenRe.size.height - (img?.size.height)!) / 2
+                targetRe.origin.x = (screenRe.size.width - (img?.size.width)!) / 2
             }
             else {
                 // in case of preview mode: we also need to calculate the ratio between the size of the physical main screen and the size of the preview window to scale the image down.
-                scaledHeight = screenRe.size.height / mainScreenRect?.size.height * img.size.height
-                scaledWidth = screenRe.size.width / mainScreenRect?.size.width * img.size.width
+                scaledHeight = screenRe.size.height / (mainScreenRect?.size.height)! * (img?.size.height)!
+                scaledWidth = screenRe.size.width / (mainScreenRect?.size.width)! * (img?.size.width)!
                 targetRe.size.height = scaledHeight
                 targetRe.size.width = scaledWidth
                 targetRe.origin.y = (screenRe.size.height - scaledHeight) / 2
@@ -786,13 +785,13 @@ class AnimatedGifView : ScreenSaverView {
             if imgRatio >= screenRatio {
                 targetRe.size.height = screenRe.size.height
                 targetRe.origin.y = screenRe.origin.y
-                targetRe.size.width = calcWidth(fromRatio: imgRatio, andHeight: screenRe.size.height)
+                targetRe.size.width = CGFloat(calcWidth(fromRatio: imgRatio, andHeight: Float(screenRe.size.height)))
                 targetRe.origin.x = -1 * (targetRe.size.width - screenRe.size.width) / 2
             }
             else {
                 targetRe.size.width = screenRe.size.width
                 targetRe.origin.x = screenRe.origin.x
-                targetRe.size.height = calcHeight(fromRatio: imgRatio, andWidth: screenRe.size.width)
+                targetRe.size.height = CGFloat(calcHeight(fromRatio: imgRatio, andWidth: Float(screenRe.size.width)))
                 targetRe.origin.y = -1 * (targetRe.size.height - screenRe.size.height) / 2
             }
         }
@@ -810,11 +809,11 @@ class AnimatedGifView : ScreenSaverView {
             img = NSImage(contentsOf: aName)
         }
         // check if a GIF was loaded
-        if img {
+        if (img != nil) {
             // get an NSBitmapImageRep that we need to get to the bitmap data and properties of GIF
-            gifRep = img.representations()[FIRST_FRAME] as? NSBitmapImageRep
+            gifRep = img?.representations()[FIRST_FRAME] as? NSBitmapImageRep
             // get max number of frames of GIF
-            maxFrameCount = Int(gifRep.value(forProperty: .frameCount))
+            maxFrameCount = Int(gifRep!.value(forProperty: .frameCount))
             // setup FPS of loaded GIF
             if manualFpsActive {
                 // set frame rate manual
@@ -826,14 +825,14 @@ class AnimatedGifView : ScreenSaverView {
                 animationTimeInterval = duration
             }
             // in case of no review mode and active config option create an array in memory with all frames of bitmap in bitmap format (can be used directly as OpenGL texture)
-            if (isPreview() == false) && (loadAnimationToMem == true) {
+            if (isPreview == false) && (loadAnimationToMem == true) {
                 animationImages = [AnyHashable]()
                 for frame in 0..<maxFrameCount {
-                    gifRep.setProperty(.currentFrame, withValue: frame)
+                    gifRep?.setProperty(.currentFrame, withValue: frame)
                         // bitmapData needs most CPU time during animation.
                         // thats why we execute bitmapData here during startAnimation and not in animateOneFrame. the start of screensaver will be than slower of cause, but during animation itself we need less CPU time
-                    let data = UInt8(gifRep.bitmapData ?? 0)
-                    let size = UInt(gifRep.bytesPerPlane)
+                    let data = UInt8(gifRep?.bitmapData ?? 0)
+                    let size = UInt(gifRep!.bytesPerPlane)
                     UInt8(                    // copy the bitmap data into an NSData object, that can be save transferred to animateOneFrame
 NSData) * imgData = Data(bytes: data, length: Int(size))
                     animationImages.append(imgData)
@@ -856,9 +855,9 @@ NSData) * imgData = Data(bytes: data, length: Int(size))
                 return currFrameDuration;
                 */
             // As workaround for the problem of NSBitmapImageRep class we use CGImageSourceCopyPropertiesAtIndex that always gives back the real value
-        let source: CGImageSourceRef = CGImageSourceCreateWithURL((URL(string: gifFileName) as? CFURLRef), nil)
+        let source: CGImageSource = CGImageSourceCreateWithURL((URL(string: gifFileName) as? CFURLRef), nil)
         if source != nil {
-            let cfdProperties: CFDictionaryRef = CGImageSourceCopyPropertiesAtIndex(source, 0, nil)
+            let cfdProperties: CFDictionary = CGImageSourceCopyPropertiesAtIndex(source, 0, nil)
             let properties = CFBridgingRelease(cfdProperties)
             let duration = (properties[(kCGImagePropertyGIFDictionary as? String)]?[(kCGImagePropertyGIFUnclampedDelayTime as? String)]) as? NSNumber
                 //scale duration by 1000 to get ms, because it is in sec and a fraction between 1 and 0
