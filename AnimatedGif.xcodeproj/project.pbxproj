@@ -7,19 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		CC24BA9B1BF124350045BDC7 /* AnimatedGifView.h in Headers */ = {isa = PBXBuildFile; fileRef = CC24BA9A1BF124350045BDC7 /* AnimatedGifView.h */; };
-		CC24BA9D1BF124350045BDC7 /* AnimatedGifView.m in Sources */ = {isa = PBXBuildFile; fileRef = CC24BA9C1BF124350045BDC7 /* AnimatedGifView.m */; };
+		7898A311EE96274C199502C9 /* AnimatedGifView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7898A514712B4B6CB3867B3A /* AnimatedGifView.swift */; };
 		CC4486F21C8A3A50008520D2 /* thumbnail.png in Resources */ = {isa = PBXBuildFile; fileRef = CC4486F01C8A3A50008520D2 /* thumbnail.png */; };
 		CC4486F31C8A3A50008520D2 /* thumbnail@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = CC4486F11C8A3A50008520D2 /* thumbnail@2x.png */; };
 		CCC3B9991C788F8E00FBE423 /* Options.xib in Resources */ = {isa = PBXBuildFile; fileRef = CCC3B99B1C788F8E00FBE423 /* Options.xib */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		7898A514712B4B6CB3867B3A /* AnimatedGifView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnimatedGifView.swift; sourceTree = "<group>"; };
+		B689FFE22044F92300B2BF9B /* AnimatedGif-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "AnimatedGif-Bridging-Header.h"; sourceTree = "<group>"; };
 		CC1073C41C78947900AC5F63 /* es */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = es; path = es.lproj/Options.xib; sourceTree = "<group>"; };
 		CC24BA951BF124350045BDC7 /* AnimatedGif.saver */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AnimatedGif.saver; sourceTree = BUILT_PRODUCTS_DIR; };
 		CC24BA991BF124350045BDC7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		CC24BA9A1BF124350045BDC7 /* AnimatedGifView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AnimatedGifView.h; sourceTree = "<group>"; };
-		CC24BA9C1BF124350045BDC7 /* AnimatedGifView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AnimatedGifView.m; sourceTree = "<group>"; };
 		CC39BE001EDAD834008FCA5C /* ja */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = ja; path = ja.lproj/Options.xib; sourceTree = "<group>"; };
 		CC4486F01C8A3A50008520D2 /* thumbnail.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = thumbnail.png; path = extra/thumbnail.png; sourceTree = SOURCE_ROOT; };
 		CC4486F11C8A3A50008520D2 /* thumbnail@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "thumbnail@2x.png"; path = "extra/thumbnail@2x.png"; sourceTree = SOURCE_ROOT; };
@@ -57,10 +56,10 @@
 		CC24BA971BF124350045BDC7 /* AnimatedGif */ = {
 			isa = PBXGroup;
 			children = (
-				CC24BA9A1BF124350045BDC7 /* AnimatedGifView.h */,
-				CC24BA9C1BF124350045BDC7 /* AnimatedGifView.m */,
 				CC24BA981BF124350045BDC7 /* Supporting Files */,
 				CCC3B99B1C788F8E00FBE423 /* Options.xib */,
+				B689FFE22044F92300B2BF9B /* AnimatedGif-Bridging-Header.h */,
+				7898A514712B4B6CB3867B3A /* AnimatedGifView.swift */,
 			);
 			path = AnimatedGif;
 			sourceTree = "<group>";
@@ -82,7 +81,6 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CC24BA9B1BF124350045BDC7 /* AnimatedGifView.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -118,6 +116,7 @@
 				TargetAttributes = {
 					CC24BA941BF124350045BDC7 = {
 						CreatedOnToolsVersion = 6.2;
+						LastSwiftMigration = 0920;
 					};
 				};
 			};
@@ -159,7 +158,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CC24BA9D1BF124350045BDC7 /* AnimatedGifView.m in Sources */,
+				7898A311EE96274C199502C9 /* AnimatedGifView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -258,12 +257,17 @@
 		CC24BAA11BF124350045BDC7 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = AnimatedGif/Info.plist;
 				INSTALL_PATH = "$(HOME)/Library/Screen Savers";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "noname.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "AnimatedGif/AnimatedGif-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 4.0;
 				WRAPPER_EXTENSION = saver;
 			};
 			name = Debug;
@@ -271,13 +275,17 @@
 		CC24BAA21BF124350045BDC7 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = AnimatedGif/Info.plist;
 				INSTALL_PATH = "$(HOME)/Library/Screen Savers";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = "noname.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "AnimatedGif/AnimatedGif-Bridging-Header.h";
+				SWIFT_VERSION = 4.0;
 				WRAPPER_EXTENSION = saver;
 			};
 			name = Release;
